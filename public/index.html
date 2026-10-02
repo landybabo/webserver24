@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>실시간 글로벌 채팅</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; display: flex; justify-content: center; }
+        .chat-container { width: 100%; max-width: 600px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        #messages { list-style-type: none; padding: 0; height: 400px; overflow-y: scroll; border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; border-radius: 4px; background: #fafafa; }
+        #messages li { padding: 8px 10px; margin-bottom: 6px; border-radius: 4px; background: #e1ffc7; word-break: break-all; }
+        #form { display: flex; gap: 10px; }
+        #input { flex-grow: 1; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px; }
+        button { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        button:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <h2>실시간 채팅방</h2>
+        <ul id="messages"></ul>
+        <form id="form" action="">
+            <input id="input" autocomplete="off" placeholder="메시지를 입력하세요..." required /><button>전송</button>
+        </form>
+    </div>
+
+    <!-- Socket.io 클라이언트 라이브러리 -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+
+        const form = document.getElementById('form');
+        const input = document.getElementById('input');
+        const messages = document.getElementById('messages');
+
+        // 닉네임 간단히 설정 (처음 접속 시)
+        const username = prompt("채팅에서 사용할 닉네임을 입력하세요:") || "익명";
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            if (input.value) {
+                socket.emit('chat message', { name: username, message: input.value });
+                input.value = '';
+            }
+        });
+
+        socket.on('chat message', function(data) {
+            const item = document.createElement('li');
+            item.textContent = `${data.name}: ${data.message}`;
+            messages.appendChild(item);
+            messages.scrollTop = messages.scrollHeight; // 자동 스크롤
+        });
+    </script>
+</body>
+</html>
