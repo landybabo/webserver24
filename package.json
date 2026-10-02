@@ -2,16 +2,24 @@
   "name": "web-chat",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node server.js",
+    "setup": "node setup.js",
+    "test": "node --test"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
+  "engines": {
+    "node": ">=24.0.0"
+  },
   "dependencies": {
     "express": "^5.2.1",
     "socket.io": "^4.8.4"
+  },
+  "devDependencies": {
+    "socket.io-client": "^4.8.4"
   }
 }
