@@ -6,6 +6,7 @@
     <title>똥고야이</title>
     <link rel="stylesheet" href="/style.css">
     <script src="/socket.io/socket.io.js" defer></script>
+    <script src="/calls.js" defer></script>
     <script src="/app.js" defer></script>
 </head>
 <body>
@@ -43,6 +44,27 @@
         <section class="conversation" aria-label="대화방">
             <header class="chat-header"><div><p class="eyebrow">형엉덩이</p><h1 id="chat-title">고야이</h1></div><span id="connection" class="connection" role="status">연결 중</span></header>
             <div id="room-notice" class="conversation-note">메시지는 저장되어 다음 접속 때도 이어볼 수 있어요.</div>
+            <section id="call-panel" class="call-panel" aria-label="음성 통화">
+                <div class="call-heading"><strong>음성 통화</strong><span id="call-status" role="status">통화 설정 확인 중…</span></div>
+                <div class="call-actions">
+                    <label class="sr-only" for="call-peer">통화할 상대</label>
+                    <select id="call-peer"><option value="">통화할 상대 선택</option></select>
+                    <button id="call-start" class="primary" type="button" disabled>전화 걸기</button>
+                    <button id="call-accept" class="primary" type="button" hidden>전화 받기</button>
+                    <button id="call-mute" class="text-button" type="button" aria-pressed="false" hidden>음소거</button>
+                    <button id="call-end" class="call-end" type="button" hidden>통화 종료</button>
+                    <button id="call-play" class="primary" type="button" hidden>통화 소리 켜기</button>
+                </div>
+                <p id="call-error" class="error" role="alert"></p>
+                <details id="call-devices" hidden>
+                    <summary>마이크·헤드셋 설정</summary>
+                    <label for="call-mic">마이크</label><select id="call-mic"><option value="">기기 기본 장치</option></select>
+                    <div id="call-output-row"><label for="call-output">소리 출력</label><select id="call-output"><option value="">기기 기본 장치</option></select></div>
+                    <button id="call-output-picker" class="text-button" type="button" hidden>출력 장치 선택 허용</button>
+                    <p class="footnote">블루투스 헤드셋을 기기에 먼저 연결하세요. 출력 선택이 없으면 휴대폰·PC의 오디오 설정에서 헤드셋을 선택하세요. 통화 중에는 이 페이지를 열어두세요.</p>
+                </details>
+                <audio id="call-audio" autoplay></audio>
+            </section>
             <div id="message-scroll" class="message-scroll">
                 <button id="older-messages" class="history-button" type="button" hidden>이전 메시지 보기</button>
                 <div id="empty" class="empty"><span aria-hidden="true">“</span><h2>첫 이야기를 남겨보세요</h2><p>상대방이 접속하지 않아도 메시지는 전달돼요.</p></div>

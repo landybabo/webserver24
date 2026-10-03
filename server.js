@@ -4,8 +4,9 @@ const path = require('node:path');
 const { randomBytes, createHash } = require('node:crypto');
 const { Server } = require('socket.io');
 const { openStore, verifyPassword, initializeUsers } = require('./store');
+const { installCalls } = require('./calls');
 
-function createChatServer({ dbPath, secureCookies = process.env.NODE_ENV === 'production', publicOrigin = process.env.PUBLIC_ORIGIN || process.env.RENDER_EXTERNAL_URL, guestEnabled = process.env.ALLOW_GUESTS !== 'false' } = {}) {
+function createChatServer({ dbPath, secureCookies = process.env.NODE_ENV === 'production', publicOrigin = process.env.PUBLIC_ORIGIN || process.env.RENDER_EXTERNAL_URL, guestEnabled = process.env.ALLOW_GUESTS !== 'false', callEnv = process.env, callRingMs, callConnectMs } = {}) {
     const db = openStore(dbPath);
     // A crash has no reliable disconnect timestamp: preserve that uncertainty.
     db.prepare("UPDATE visits SET end_reason = 'interrupted' WHERE left_at IS NULL AND end_reason IS NULL").run();
@@ -73,7 +74,8 @@ function createChatServer({ dbPath, secureCookies = process.env.NODE_ENV === 'pr
             'Cache-Control': 'no-store',
             'X-Content-Type-Options': 'nosniff',
             'Referrer-Policy': 'no-referrer',
-            'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
+            'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; media-src 'self' blob:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
+            'Permissions-Policy': 'microphone=(self), camera=(), speaker-selection=(self)',
         });
         if (!allowedOrigin(req)) return res.status(403).json({ error: '허용되지 않은 요청입니다.' });
         next();
@@ -144,6 +146,7 @@ function createChatServer({ dbPath, secureCookies = process.env.NODE_ENV === 'pr
             WHERE visits.id < ? ORDER BY visits.id DESC LIMIT 51`).all(before);
         res.json({ hasMore: rows.length > 50, visits: rows.slice(0, 50) });
     });
+    const closeCalls = installCalls({ io, app, requireAuth, sessionFor, db, env: callEnv, ringMs: callRingMs, connectMs: callConnectMs });
     app.use(express.static(path.join(__dirname, 'public')));
     app.use('/api', (req, res) => res.status(404).json({ error: '경로를 찾을 수 없습니다.' }));
     app.use((error, req, res, next) => {
@@ -222,6 +225,7 @@ function createChatServer({ dbPath, secureCookies = process.env.NODE_ENV === 'pr
     cleanup.unref();
     async function close() {
         closing = true;
+        closeCalls();
         clearInterval(cleanup);
         await new Promise(resolve => io.close(resolve));
         db.close();

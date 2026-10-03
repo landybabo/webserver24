@@ -9,7 +9,7 @@ const { createChatServer } = require('../server');
 const { addUser } = require('../store');
 
 async function main() {
-    const chat = createChatServer({ dbPath: ':memory:', secureCookies: false });
+    const chat = createChatServer({ dbPath: ':memory:', secureCookies: false, callEnv: { CALL_ALLOW_DIRECT: 'true' } });
     addUser(chat.db, 1, '테스트하나', 'browser-test-password');
     addUser(chat.db, 2, '테스트둘', 'browser-test-password');
     chat.server.listen(0, '127.0.0.1');
@@ -18,6 +18,7 @@ async function main() {
     const profile = mkdtempSync(path.join(os.tmpdir(), 'webchat-browser-'));
     const browser = spawn(process.env.EDGE_PATH || 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe', [
         '--headless', '--disable-gpu', '--no-first-run', '--no-default-browser-check',
+        '--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream', '--disable-background-mode',
         '--remote-debugging-port=0', `--user-data-dir=${profile}`, 'about:blank',
     ], { windowsHide: true, stdio: ['ignore', 'ignore', 'pipe'] });
     let ws;
@@ -84,6 +85,50 @@ async function main() {
         assert.equal(await evaluate(mobile, "document.querySelector('.bubble img') === null"), true);
         assert.equal(await evaluate(mobile, 'document.documentElement.scrollWidth <= window.innerWidth'), true);
         assert.equal(await evaluate(desktop, "document.querySelectorAll('.person.online').length"), 2);
+        await waitFor(desktop, "!document.getElementById('call-start').disabled");
+        await evaluate(desktop, "document.getElementById('call-peer').value = '2'; document.getElementById('call-start').click()");
+        await waitFor(mobile, "!document.getElementById('call-accept').hidden");
+        assert.equal(await evaluate(mobile, 'voiceCalls.current.stream === undefined'), true, 'incoming call must not open microphone before acceptance');
+        await evaluate(mobile, "document.getElementById('call-accept').click()");
+        await waitFor(desktop, "voiceCalls.current?.pc?.connectionState === 'connected'");
+        await waitFor(mobile, "voiceCalls.current?.pc?.connectionState === 'connected'");
+        for (const session of [desktop, mobile]) {
+            const received = await evaluate(session, `new Promise((resolve, reject) => {
+                const deadline = Date.now() + 6000;
+                const check = async () => {
+                    const stats = await voiceCalls.current.pc.getStats();
+                    if ([...stats.values()].some(stat => stat.type === 'inbound-rtp' && stat.kind === 'audio' && stat.bytesReceived > 0)) resolve(true);
+                    else if (Date.now() > deadline) reject(new Error('No incoming audio packets'));
+                    else setTimeout(check, 100);
+                }; check();
+            })`);
+            assert.equal(received, true);
+        }
+        await evaluate(desktop, "window.testMic = voiceCalls.current.stream.getAudioTracks()[0]; document.getElementById('call-mute').click()");
+        assert.equal(await evaluate(desktop, 'window.testMic.enabled'), false);
+        await evaluate(desktop, "document.getElementById('call-mute').click()");
+        assert.equal(await evaluate(desktop, 'window.testMic.enabled'), true);
+        await evaluate(mobile, 'window.testMic = voiceCalls.current.stream.getAudioTracks()[0]');
+        await evaluate(desktop, "document.getElementById('call-end').click()");
+        await waitFor(mobile, 'voiceCalls.current === null');
+        assert.equal(await evaluate(desktop, 'window.testMic.readyState'), 'ended');
+        assert.equal(await evaluate(mobile, 'window.testMic.readyState'), 'ended');
+        await evaluate(mobile, "document.getElementById('call-peer').value = '1'; document.getElementById('call-start').click()");
+        await waitFor(desktop, "!document.getElementById('call-accept').hidden");
+        await evaluate(desktop, "document.getElementById('call-end').click()");
+        await waitFor(mobile, "voiceCalls.current === null && document.getElementById('call-status').textContent.includes('거절')");
+        await evaluate(desktop, `window.savedGetUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
+            navigator.mediaDevices.getUserMedia = () => Promise.reject(new DOMException('denied', 'NotAllowedError'));
+            document.getElementById('call-start').click();`);
+        await waitFor(desktop, "voiceCalls.current === null && document.getElementById('call-error').textContent.includes('권한')");
+        await evaluate(desktop, `navigator.mediaDevices.getUserMedia = () => new Promise(resolve => { window.delayedMicrophone = resolve; });
+            document.getElementById('call-start').click();`);
+        await waitFor(desktop, "voiceCalls.current?.phase === 'preparing'");
+        await evaluate(desktop, `(async () => { document.getElementById('call-end').click();
+            window.lateStream = await window.savedGetUserMedia({ audio: true });
+            window.delayedMicrophone(window.lateStream);
+            navigator.mediaDevices.getUserMedia = window.savedGetUserMedia; })()`);
+        await waitFor(desktop, "window.lateStream.getTracks().every(track => track.readyState === 'ended')");
         await call('Page.reload', {}, mobile);
         await waitFor(mobile, "document.querySelectorAll('.bubble').length === 1 && document.getElementById('connection').textContent === '실시간 연결됨'");
         await evaluate(mobile, "document.getElementById('logout').click()");
@@ -96,10 +141,10 @@ async function main() {
         await call('Page.reload', {}, guest);
         await waitFor(guest, "document.getElementById('connection').textContent === '실시간 연결됨' && document.getElementById('my-name').textContent.includes('게스트')");
         assert.deepEqual(errors, []);
-        console.log('PASS: desktop/mobile login, live delivery, safe text rendering, reload history, presence, logout, one-click guest entry and guest reload; no browser exceptions.');
+        console.log('PASS: chat, guest login, two-way WebRTC audio packets, accept/reject, mute, microphone release; no browser exceptions. Bluetooth hardware and external TURN are not simulated.');
         const exited = once(browser, 'exit');
         await call('Browser.close');
-        if (browser.exitCode === null) await exited;
+        if (browser.exitCode === null) await Promise.race([exited, new Promise(resolve => setTimeout(resolve, 2000))]);
     } finally {
         ws?.close();
         if (browser.exitCode === null) { const exited = once(browser, 'exit'); browser.kill(); await exited.catch(() => {}); }

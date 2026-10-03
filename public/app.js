@@ -10,6 +10,7 @@ let generation = 0;
 let visitsRequest = 0;
 let historyLoading = false;
 let guestEnabled = false;
+const voiceCalls = new VoiceCalls();
 const dateFormat = new Intl.DateTimeFormat('ko-KR', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 const date = value => value ? dateFormat.format(new Date(value)) : '기록 없음';
 function element(tag, text, className) {
@@ -29,6 +30,7 @@ async function api(url, options = {}) {
 }
 function showLogin(error = '') {
     generation++;
+    voiceCalls.detach();
     if (socket) { socket.removeAllListeners(); socket.disconnect(); socket = null; }
     me = null; people = []; messages.clear(); visits = []; pending = null; sending = false; historyLoading = false;
     $('messages').replaceChildren(); $('people').replaceChildren(); $('visits').replaceChildren();
@@ -38,6 +40,7 @@ function showLogin(error = '') {
     $('login-error').textContent = error;
 }
 function renderPeople() {
+    voiceCalls.setPeople(people);
     $('people').replaceChildren(...people.map(user => {
         const card = element('div', undefined, `person${user.online ? ' online' : ''}`);
         const top = element('div', undefined, 'person-top');
@@ -125,6 +128,7 @@ function startChat(user) {
     $('password').value = ''; $('my-name').textContent = `${me.name} · 나`;
     $('connection').textContent = '연결 중'; $('connection').className = 'connection';
     socket = io({ autoConnect: false });
+    voiceCalls.attach(socket, me);
     socket.on('presence', data => { people = data; renderPeople(); renderMessages(); loadVisits().catch(report); });
     socket.on('chat message', receiveMessage);
     socket.on('connect', () => {
