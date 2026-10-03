@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>둘 사이 · 메시지</title>
+    <title>똥고야이</title>
     <link rel="stylesheet" href="/style.css">
     <script src="/socket.io/socket.io.js" defer></script>
     <script src="/app.js" defer></script>
@@ -11,25 +11,25 @@
 <body>
     <main id="login-view" class="login-view">
         <section class="login-card">
-            <div class="brand-mark">둘</div>
-            <p class="eyebrow">JUST BETWEEN US</p>
-            <h1>둘 사이</h1>
-            <p class="muted">우리의 대화가 이어지는 곳.</p>
+            <div class="brand-mark">뿡</div>
+            <p class="eyebrow">메롱롱</p>
+            <h1>엉덩이</h1>
+            <p class="muted">대화하는곳</p>
             <form id="login-form">
                 <label for="name">이름</label>
                 <input id="name" autocomplete="username" maxlength="24" required placeholder="등록된 이름">
                 <label for="password">비밀번호</label>
                 <input id="password" type="password" autocomplete="current-password" maxlength="128" required placeholder="비밀번호 입력">
                 <p id="login-error" class="error" role="alert"></p>
-                <button id="login-button" class="primary" type="submit">대화 시작하기 <span aria-hidden="true">↗</span></button>
+                <button id="login-button" class="primary" type="submit">대화 시작 <span aria-hidden="true">↗</span></button>
             </form>
-            <button id="guest-button" class="secondary" type="button" hidden>게스트로 입장</button>
+            <button id="guest-button" class="secondary" type="button" hidden>엉덩이로 입장</button>
             <p id="access-notice" class="footnote">입장 방식을 확인하고 있어요.</p>
         </section>
     </main>
     <main id="chat-view" class="app-shell" hidden>
         <aside class="sidebar">
-            <div class="brand"><span class="brand-mark small">둘</span><div><strong>둘 사이</strong><span class="eyebrow">MESSAGES</span></div></div>
+            <div class="brand"><span class="brand-mark small">메롱</span><div><strong>고야이</strong><span class="eyebrow">MESSAGES</span></div></div>
             <div class="sidebar-heading"><h2>대화 참여자</h2><span id="room-badge" class="badge">대화방</span></div>
             <div id="people"></div>
             <section class="activity-section">
@@ -41,7 +41,7 @@
             <div class="account"><span id="my-name"></span><button id="logout" class="text-button" type="button">로그아웃</button></div>
         </aside>
         <section class="conversation" aria-label="대화방">
-            <header class="chat-header"><div><p class="eyebrow">OUR CONVERSATION</p><h1 id="chat-title">우리의 대화</h1></div><span id="connection" class="connection" role="status">연결 중</span></header>
+            <header class="chat-header"><div><p class="eyebrow">형엉덩이</p><h1 id="chat-title">고야이</h1></div><span id="connection" class="connection" role="status">연결 중</span></header>
             <div id="room-notice" class="conversation-note">메시지는 저장되어 다음 접속 때도 이어볼 수 있어요.</div>
             <div id="message-scroll" class="message-scroll">
                 <button id="older-messages" class="history-button" type="button" hidden>이전 메시지 보기</button>
@@ -53,7 +53,7 @@
                 <p id="chat-error" class="error" role="alert"></p>
                 <form id="message-form" class="composer">
                     <label class="sr-only" for="message-input">메시지</label>
-                    <textarea id="message-input" rows="2" maxlength="4000" placeholder="오늘은 어떤 하루였나요?" required></textarea>
+                    <textarea id="message-input" rows="2" maxlength="4000" placeholder="똥강아지" required></textarea>
                     <button id="send" class="primary" type="submit" disabled>보내기 ↑</button>
                 </form>
                 <div class="composer-hint"><span>Enter로 전송 · Shift + Enter로 줄바꿈</span><span id="character-count">0 / 4,000</span></div>
